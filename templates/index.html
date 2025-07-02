@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV File Table Display</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -154,7 +154,8 @@
             </div>
             
             <div id="scatterPlotContainer" style="margin: 20px 0; display: none;">
-                <canvas id="scatterPlot" width="800" height="400"></canvas>
+                <div id="scatterPlot" style="width: 1000px; height: 700px;"></div>
+                <!-- <div id="scatterPlot" style="width: 100%; height: 1000px;"></div> -->
             </div>
             
             <div id="csvTable"></div>
@@ -163,7 +164,6 @@
 
     <script>
         let csvData = null;
-        let scatterChart = null;
 
         // CSV Upload functionality
         async function uploadCSV() {
@@ -287,8 +287,8 @@
             return true;
         }
         
-        // Generate scatter plot
-        function generateScatterPlot() {
+        // Generate scatter plot using Plotly
+        async function generateScatterPlot() {
             const xAxisIndex = document.getElementById('xAxisSelect').value;
             const yAxisIndex = document.getElementById('yAxisSelect').value;
             
@@ -302,64 +302,78 @@
                 return;
             }
             
-            const scatterPlotContainer = document.getElementById('scatterPlotContainer');
-            const canvas = document.getElementById('scatterPlot');
-            const ctx = canvas.getContext('2d');
-            
-            // Destroy existing chart if it exists
-            if (scatterChart) {
-                scatterChart.destroy();
-            }
-            
-            // Prepare data for scatter plot
-            const plotData = csvData.data.map((row, index) => {
-                const x = Number(row[xAxisIndex]);
-                const y = Number(row[yAxisIndex]);
-                return { x: x, y: y };
-            }).filter(point => !isNaN(point.x) && !isNaN(point.y));
-            
-            // Create scatter plot
-            scatterChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: `${csvData.columns[yAxisIndex]} vs ${csvData.columns[xAxisIndex]}`,
-                        data: plotData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Scatter Plot: ${csvData.columns[yAxisIndex]} vs ${csvData.columns[xAxisIndex]}`
-                        },
-                        legend: {
-                            display: true
-                        }
+            try {
+                // Send request to backend to generate Plotly chart
+                const response = await fetch('/generate-scatter-plot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: csvData.columns[xAxisIndex]
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: csvData.columns[yAxisIndex]
-                            }
-                        }
-                    }
+                    body: JSON.stringify({
+                        x_column: xAxisIndex,
+                        y_column: yAxisIndex,
+                        csv_data: csvData
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
                 }
-            });
-            
-            scatterPlotContainer.style.display = 'block';
+                
+                const plotData = await response.json();
+                
+                // Render the Plotly chart
+                const plotDiv = document.getElementById('scatterPlot');
+                const scatterPlotContainer = document.getElementById('scatterPlotContainer');
+                
+                // Configure Plotly with enhanced interactivity
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToAdd: ['select2d', 'lasso2d'],
+                    modeBarButtonsToRemove: ['autoScale2d', 'resetScale2d'],
+                    toImageButtonOptions: {
+                        format: 'png',
+                        filename: 'scatter_plot',
+                        height: 500,
+                        width: 800,
+                        scale: 2
+                    }
+                };
+                
+                // Enhanced layout for better interactivity
+                plotData.plot.layout.dragmode = 'zoom';
+                plotData.plot.layout.hovermode = 'closest';
+                plotData.plot.layout.selectdirection = 'diagonal';
+                
+                // Create the plot first
+                Plotly.newPlot(plotDiv, plotData.plot.data, plotData.plot.layout, config);
+                
+                // Add selection event handlers after plot is created
+                plotDiv.addEventListener('plotly_selected', function(eventData) {
+                    if (eventData && eventData.points.length > 0) {
+                        const selectedPoints = eventData.points.map(point => {
+                            return `Point ${point.pointIndex + 1}: (${point.x}, ${point.y})`;
+                        });
+                        console.log('Selected points:', selectedPoints);
+                        alert(`Selected ${eventData.points.length} points:\n${selectedPoints.slice(0, 5).join('\n')}${eventData.points.length > 5 ? '\n...' : ''}`);
+                    }
+                });
+                
+                plotDiv.addEventListener('plotly_click', function(eventData) {
+                    if (eventData.points.length > 0) {
+                        const point = eventData.points[0];
+                        alert(`Clicked Point:\n${csvData.columns[xAxisIndex]}: ${point.x}\n${csvData.columns[yAxisIndex]}: ${point.y}\nPoint Index: ${point.pointIndex + 1}`);
+                    }
+                });
+                
+                scatterPlotContainer.style.display = 'block';
+                
+            } catch (error) {
+                alert('Error generating scatter plot: ' + error.message);
+            }
         }
         
         // Load CSV data from localStorage if available
