@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag & Drop Data Persistence</title>
+    <title>CSV File Table Display</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,46 +13,6 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-        }
-        .drop-zone {
-            width: 100%;
-            height: 300px;
-            border: 3px dashed #ccc;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: white;
-            margin: 20px 0;
-            transition: all 0.3s ease;
-        }
-        .drop-zone.dragover {
-            border-color: #007bff;
-            background-color: #e3f2fd;
-        }
-        .data-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .data-item {
-            background: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: move;
-            user-select: none;
-            transition: transform 0.2s ease;
-        }
-        .data-item:hover {
-            transform: scale(1.05);
-        }
-        .data-item.dragging {
-            opacity: 0.5;
-        }
-        .controls {
-            margin: 20px 0;
         }
         button {
             background: #28a745;
@@ -65,12 +25,6 @@
         }
         button:hover {
             background: #218838;
-        }
-        .clear-btn {
-            background: #dc3545;
-        }
-        .clear-btn:hover {
-            background: #c82333;
         }
         input[type="text"], input[type="file"] {
             padding: 10px;
@@ -116,18 +70,37 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
+        .column-index-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .column-item {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+        .column-index {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .column-name {
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Drag & Drop Data Persistence</h1>
-        <p>Add items, drag them around, and they'll persist even after page refresh!</p>
-        
-        <div class="controls">
-            <input type="text" id="newItem" placeholder="Enter new item" />
-            <button onclick="addItem()">Add Item</button>
-            <button class="clear-btn" onclick="clearAll()">Clear All</button>
-        </div>
+        <h1>CSV File Table Display</h1>
+        <p>Upload CSV files and view them as tables with data persistence!</p>
         
         <div class="csv-upload">
             <h2>CSV File Upload</h2>
@@ -135,130 +108,19 @@
             <button onclick="uploadCSV()">Upload CSV</button>
         </div>
         
-        <div class="drop-zone" id="dropZone">
-            <p>Drop items here or drag them around</p>
-        </div>
-        
-        <div class="data-items" id="dataItems">
-        </div>
-        
         <div id="csvTableContainer" style="margin-top: 30px; display: none;">
             <h2 id="csvTableTitle">CSV Table</h2>
+            
+            <div id="columnIndexContainer" style="margin: 20px 0; display: none;">
+                <h3>Column Headers with Index</h3>
+                <div id="columnIndexList"></div>
+            </div>
+            
             <div id="csvTable"></div>
         </div>
     </div>
 
     <script>
-        let items = [];
-        const dropZone = document.getElementById('dropZone');
-        const dataItems = document.getElementById('dataItems');
-        const newItemInput = document.getElementById('newItem');
-
-        // Load data from localStorage on page load
-        function loadData() {
-            const saved = localStorage.getItem('dragDropData');
-            if (saved) {
-                items = JSON.parse(saved);
-                renderItems();
-            }
-        }
-
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('dragDropData', JSON.stringify(items));
-        }
-
-        // Add new item
-        function addItem() {
-            const text = newItemInput.value.trim();
-            if (text) {
-                items.push({
-                    id: Date.now(),
-                    text: text,
-                    x: Math.random() * 200,
-                    y: Math.random() * 200
-                });
-                newItemInput.value = '';
-                renderItems();
-                saveData();
-            }
-        }
-
-        // Clear all items
-        function clearAll() {
-            items = [];
-            renderItems();
-            saveData();
-        }
-
-        // Render items
-        function renderItems() {
-            dataItems.innerHTML = '';
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'data-item';
-                div.draggable = true;
-                div.textContent = item.text;
-                div.dataset.id = item.id;
-                div.style.left = item.x + 'px';
-                div.style.top = item.y + 'px';
-                
-                div.addEventListener('dragstart', handleDragStart);
-                div.addEventListener('dragend', handleDragEnd);
-                
-                dataItems.appendChild(div);
-            });
-        }
-
-        // Drag and drop handlers
-        let draggedElement = null;
-
-        function handleDragStart(e) {
-            draggedElement = e.target;
-            e.target.classList.add('dragging');
-        }
-
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            draggedElement = null;
-        }
-
-        // Drop zone events
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            
-            if (draggedElement) {
-                const rect = dropZone.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                const itemId = parseInt(draggedElement.dataset.id);
-                const item = items.find(i => i.id === itemId);
-                if (item) {
-                    item.x = x;
-                    item.y = y;
-                    saveData();
-                    renderItems();
-                }
-            }
-        });
-
-        // Allow enter key to add items
-        newItemInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addItem();
-            }
-        });
 
         // CSV Upload functionality
         async function uploadCSV() {
@@ -302,9 +164,22 @@
             const container = document.getElementById('csvTableContainer');
             const title = document.getElementById('csvTableTitle');
             const tableDiv = document.getElementById('csvTable');
+            const columnIndexContainer = document.getElementById('columnIndexContainer');
+            const columnIndexList = document.getElementById('columnIndexList');
             
             title.textContent = `CSV Table: ${data.filename}`;
             
+            // Create column index display
+            let columnIndexHTML = '<div class="column-index-list">';
+            data.columns.forEach((column, index) => {
+                columnIndexHTML += `<div class="column-item"><span class="column-index">[${index}]</span><span class="column-name">${column}</span></div>`;
+            });
+            columnIndexHTML += '</div>';
+            
+            columnIndexList.innerHTML = columnIndexHTML;
+            columnIndexContainer.style.display = 'block';
+            
+            // Create table
             let tableHTML = '<div class="table-container"><table>';
             
             // Create header
@@ -341,8 +216,7 @@
             }
         }
 
-        // Load data when page loads
-        loadData();
+        // Load CSV data when page loads
         loadCSVData();
     </script>
 </body>
