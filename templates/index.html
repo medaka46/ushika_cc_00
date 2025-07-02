@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV File Table Display</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -95,6 +96,23 @@
         .column-name {
             font-weight: normal;
         }
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-size: 0.9em;
+        }
+        label {
+            font-weight: bold;
+        }
+        #scatterPlotContainer {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -116,11 +134,36 @@
                 <div id="columnIndexList"></div>
             </div>
             
+            <div id="scatterPlotControls" style="margin: 20px 0; display: none;">
+                <h3>Scatter Plot</h3>
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+                    <div>
+                        <label for="xAxisSelect">X-Axis:</label>
+                        <select id="xAxisSelect">
+                            <option value="">Select column</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="yAxisSelect">Y-Axis:</label>
+                        <select id="yAxisSelect">
+                            <option value="">Select column</option>
+                        </select>
+                    </div>
+                    <button onclick="generateScatterPlot()">Generate Plot</button>
+                </div>
+            </div>
+            
+            <div id="scatterPlotContainer" style="margin: 20px 0; display: none;">
+                <canvas id="scatterPlot" width="800" height="400"></canvas>
+            </div>
+            
             <div id="csvTable"></div>
         </div>
     </div>
 
     <script>
+        let csvData = null;
+        let scatterChart = null;
 
         // CSV Upload functionality
         async function uploadCSV() {
@@ -161,6 +204,8 @@
         
         // Display CSV data as table
         function displayCSVTable(data) {
+            csvData = data; // Store data globally for scatter plot
+            
             const container = document.getElementById('csvTableContainer');
             const title = document.getElementById('csvTableTitle');
             const tableDiv = document.getElementById('csvTable');
@@ -178,6 +223,9 @@
             
             columnIndexList.innerHTML = columnIndexHTML;
             columnIndexContainer.style.display = 'block';
+            
+            // Populate axis selectors
+            populateAxisSelectors(data.columns);
             
             // Create table
             let tableHTML = '<div class="table-container"><table>';
@@ -205,6 +253,113 @@
             
             // Save CSV data to localStorage
             localStorage.setItem('csvTableData', JSON.stringify(data));
+        }
+        
+        // Populate axis selector dropdowns
+        function populateAxisSelectors(columns) {
+            const xAxisSelect = document.getElementById('xAxisSelect');
+            const yAxisSelect = document.getElementById('yAxisSelect');
+            const scatterPlotControls = document.getElementById('scatterPlotControls');
+            
+            // Clear existing options
+            xAxisSelect.innerHTML = '<option value="">Select column</option>';
+            yAxisSelect.innerHTML = '<option value="">Select column</option>';
+            
+            // Add column options
+            columns.forEach((column, index) => {
+                xAxisSelect.innerHTML += `<option value="${index}">${column}</option>`;
+                yAxisSelect.innerHTML += `<option value="${index}">${column}</option>`;
+            });
+            
+            scatterPlotControls.style.display = 'block';
+        }
+        
+        // Check if a column contains numeric data
+        function isNumericColumn(columnIndex) {
+            if (!csvData || !csvData.data) return false;
+            
+            for (let row of csvData.data) {
+                const value = row[columnIndex];
+                if (value !== null && value !== '' && isNaN(Number(value))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // Generate scatter plot
+        function generateScatterPlot() {
+            const xAxisIndex = document.getElementById('xAxisSelect').value;
+            const yAxisIndex = document.getElementById('yAxisSelect').value;
+            
+            if (!xAxisIndex || !yAxisIndex) {
+                alert('Please select both X and Y axis columns');
+                return;
+            }
+            
+            if (!isNumericColumn(xAxisIndex) || !isNumericColumn(yAxisIndex)) {
+                alert('Selected columns must contain numeric data');
+                return;
+            }
+            
+            const scatterPlotContainer = document.getElementById('scatterPlotContainer');
+            const canvas = document.getElementById('scatterPlot');
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (scatterChart) {
+                scatterChart.destroy();
+            }
+            
+            // Prepare data for scatter plot
+            const plotData = csvData.data.map((row, index) => {
+                const x = Number(row[xAxisIndex]);
+                const y = Number(row[yAxisIndex]);
+                return { x: x, y: y };
+            }).filter(point => !isNaN(point.x) && !isNaN(point.y));
+            
+            // Create scatter plot
+            scatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: `${csvData.columns[yAxisIndex]} vs ${csvData.columns[xAxisIndex]}`,
+                        data: plotData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Scatter Plot: ${csvData.columns[yAxisIndex]} vs ${csvData.columns[xAxisIndex]}`
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: csvData.columns[xAxisIndex]
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: csvData.columns[yAxisIndex]
+                            }
+                        }
+                    }
+                }
+            });
+            
+            scatterPlotContainer.style.display = 'block';
         }
         
         // Load CSV data from localStorage if available
