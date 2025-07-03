@@ -49,20 +49,31 @@ async def generate_scatter_plot(request: Request):
         x_column_idx = int(data.get('x_column'))
         y_column_idx = int(data.get('y_column'))
         hover_column_idx = data.get('hover_column')
+        filter_column_idx = data.get('filter_column')
+        filter_value = data.get('filter_value')
         csv_data = data.get('csv_data')
         
         if not csv_data:
             raise HTTPException(status_code=400, detail="No CSV data provided")
         
+        # Apply filtering if specified
+        filtered_data = csv_data['data']
+        if filter_column_idx is not None and filter_column_idx != "" and filter_value is not None and filter_value != "":
+            filter_column_idx = int(filter_column_idx)
+            filtered_data = [row for row in csv_data['data'] if str(row[filter_column_idx]) == str(filter_value)]
+            
+            if len(filtered_data) == 0:
+                raise HTTPException(status_code=400, detail=f"No data found for filter: {csv_data['columns'][filter_column_idx]} = {filter_value}")
+        
         # Extract data for plotting
-        x_values = [row[x_column_idx] for row in csv_data['data'] if row[x_column_idx] is not None]
-        y_values = [row[y_column_idx] for row in csv_data['data'] if row[y_column_idx] is not None]
+        x_values = [row[x_column_idx] for row in filtered_data if row[x_column_idx] is not None]
+        y_values = [row[y_column_idx] for row in filtered_data if row[y_column_idx] is not None]
         
         # Extract hover column data if specified
         hover_values = []
         if hover_column_idx is not None and hover_column_idx != "":
             hover_column_idx = int(hover_column_idx)
-            hover_values = [row[hover_column_idx] for row in csv_data['data']]
+            hover_values = [row[hover_column_idx] for row in filtered_data]
         
         # Convert to numeric, filter out non-numeric values
         x_numeric = []
@@ -96,6 +107,11 @@ async def generate_scatter_plot(request: Request):
                             f"{csv_data['columns'][y_column_idx]}: %{{y}}<br>" + \
                             "<extra></extra>"
         
+        # Update title to include filter information
+        plot_title = f"Interactive Scatter Plot: {csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}"
+        if filter_column_idx is not None and filter_column_idx != "" and filter_value is not None and filter_value != "":
+            plot_title += f" (Filtered: {csv_data['columns'][int(filter_column_idx)]} = {filter_value})"
+        
         # Create Plotly scatter plot
         scatter_data = go.Scatter(
             x=x_numeric,
@@ -118,7 +134,7 @@ async def generate_scatter_plot(request: Request):
         
         fig.update_layout(
             title=dict(
-                text=f"Interactive Scatter Plot: {csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}",
+                text=plot_title,
                 x=0.5,
                 font=dict(size=16)
             ),
