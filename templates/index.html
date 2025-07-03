@@ -149,6 +149,12 @@
                             <option value="">Select column</option>
                         </select>
                     </div>
+                    <div>
+                        <label for="hoverColumnSelect">Hover Info:</label>
+                        <select id="hoverColumnSelect">
+                            <option value="">Select additional column (optional)</option>
+                        </select>
+                    </div>
                     <button onclick="generateScatterPlot()">Generate Plot</button>
                 </div>
             </div>
@@ -259,16 +265,31 @@
         function populateAxisSelectors(columns) {
             const xAxisSelect = document.getElementById('xAxisSelect');
             const yAxisSelect = document.getElementById('yAxisSelect');
+            const hoverColumnSelect = document.getElementById('hoverColumnSelect');
             const scatterPlotControls = document.getElementById('scatterPlotControls');
+            
+            // Define integer columns (excluding id_number which is index 0)
+            const integerColumns = [
+                { index: 2, name: columns[2] }, // Year
+                { index: 4, name: columns[4] }, // TFA
+                { index: 5, name: columns[5] }, // Power
+                { index: 6, name: columns[6] }  // Price(USD)
+            ];
             
             // Clear existing options
             xAxisSelect.innerHTML = '<option value="">Select column</option>';
             yAxisSelect.innerHTML = '<option value="">Select column</option>';
+            hoverColumnSelect.innerHTML = '<option value="">Select additional column (optional)</option>';
             
-            // Add column options
+            // Add only integer column options for X and Y axis (excluding id_number)
+            integerColumns.forEach(col => {
+                xAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
+                yAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
+            });
+            
+            // Add all column options for hover (including string columns)
             columns.forEach((column, index) => {
-                xAxisSelect.innerHTML += `<option value="${index}">${column}</option>`;
-                yAxisSelect.innerHTML += `<option value="${index}">${column}</option>`;
+                hoverColumnSelect.innerHTML += `<option value="${index}">${column}</option>`;
             });
             
             scatterPlotControls.style.display = 'block';
@@ -291,6 +312,7 @@
         async function generateScatterPlot() {
             const xAxisIndex = document.getElementById('xAxisSelect').value;
             const yAxisIndex = document.getElementById('yAxisSelect').value;
+            const hoverColumnIndex = document.getElementById('hoverColumnSelect').value;
             
             if (!xAxisIndex || !yAxisIndex) {
                 alert('Please select both X and Y axis columns');
@@ -312,6 +334,7 @@
                     body: JSON.stringify({
                         x_column: xAxisIndex,
                         y_column: yAxisIndex,
+                        hover_column: hoverColumnIndex || null,
                         csv_data: csvData
                     })
                 });

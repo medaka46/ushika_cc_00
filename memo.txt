@@ -1,0 +1,2 @@
+20250704 07:00
+    try to reduce data indication only selected item.

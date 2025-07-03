@@ -1,0 +1,101 @@
+id_number,Project name,Year,country,TFA,Power,Price(USD),Type of building,Type of construction,Type of contract
+1,Nexus Prime Data Center,2020,Hong Kong,15000,25,250000000,Office,New,D&B
+2,CloudForge Central Hub,2019,China,28500,38,850000000,Mixed-use,A&A,Build only
+3,AquaStream Processing Center,2021,Taiwan,8200,12,120000000,Industrial,Extension,Consultant
+4,DigitalCortex Singapore,2018,Singapore,22000,32,680000000,Commercial,New,D&B
+5,GreenVolt Data Facility,2022,Malaysia,12800,18,180000000,Factory,A&A,Build only
+6,MetroLink Computing Hub,2017,Indonesia,35000,40,950000000,Residential,Extension,Consultant
+7,MediCore Data Center,2023,Philippines,18500,27,420000000,Hospital,New,D&B
+8,EduNet Processing Facility,2016,Thai,14200,19,310000000,School,A&A,Build only
+9,TransNet Computing Complex,2024,Bangladesh,29000,35,780000000,Infrastructure,Extension,Consultant
+10,EcoLab Data Center,2015,India,7800,11,95000000,Laboratory,New,D&B
+11,AgriCloud Storage Hub,2020,Hong Kong,11500,16,165000000,Warehouse,A&A,Build only
+12,FinTech Data Vault,2019,China,26000,33,720000000,Office,Extension,Consultant
+13,TourismNet Center,2021,Taiwan,19800,28,485000000,Hotel,New,D&B
+14,AutoMate Data Factory,2018,Singapore,24500,34,640000000,Factory,A&A,Build only
+15,OceanGuard Computing Center,2022,Malaysia,9200,13,135000000,Marine,Extension,Consultant
+16,CrisisCore Data Hub,2017,Indonesia,33000,39,890000000,Emergency,New,D&B
+17,VillageNet Processing Center,2023,Philippines,16000,22,280000000,Community,A&A,Build only
+18,PowerGrid Data Facility,2016,Thai,13800,20,245000000,Power Plant,Extension,Consultant
+19,SafetyNet Computing Hub,2024,Bangladesh,27500,36,755000000,Government,New,D&B
+20,Heritage Cloud Center,2015,India,6500,9,75000000,Museum,A&A,Build only
+21,TeleLink Data Complex,2020,Hong Kong,21000,30,580000000,Telecom,Extension,Consultant
+22,RailSpeed Computing Center,2019,China,45000,40,999000000,Transport,New,D&B
+23,PortMax Data Facility,2021,Taiwan,38000,38,925000000,Port,A&A,Build only
+24,SkyLink Aviation Hub,2018,Singapore,42000,40,980000000,Airport,Extension,Consultant
+25,PalmTech Processing Center,2022,Malaysia,14800,21,195000000,Processing,New,D&B
+26,MarineCore Data Center,2017,Indonesia,8900,12,115000000,Research,A&A,Build only
+27,AquaCulture Computing Hub,2023,Philippines,12200,17,175000000,Aquatic,Extension,Consultant
+28,GrainNet Data Facility,2016,Thai,17500,24,365000000,Agricultural,New,D&B
+29,FabricNet Computing Center,2024,Bangladesh,23000,31,615000000,Textile,A&A,Build only
+30,CodeVault Data Hub,2015,India,19200,26,455000000,Tech Park,Extension,Consultant
+31,BankCore Processing Center,2020,Hong Kong,31000,37,825000000,Bank,New,D&B
+32,SilkRoute Data Complex,2019,China,48000,40,1000000000,Infrastructure,A&A,Build only
+33,ChipForge Computing Facility,2021,Taiwan,25500,34,685000000,Cleanroom,Extension,Consultant
+34,LogiFlow Data Center,2018,Singapore,36000,39,875000000,Logistics,New,D&B
+35,RubberTech Processing Hub,2022,Malaysia,15500,23,235000000,Processing,A&A,Build only
+36,MineCore Data Facility,2017,Indonesia,20000,29,525000000,Mining,Extension,Consultant
+37,CocoNet Computing Center,2023,Philippines,11800,15,155000000,Processing,New,D&B
+38,FishNet Data Hub,2016,Thai,13200,18,205000000,Aquatic,A&A,Build only
+39,FashionForge Computing Complex,2024,Bangladesh,22500,32,595000000,Garment,Extension,Consultant
+40,TechVault Data Center,2015,India,28000,35,745000000,IT Complex,New,D&B
+41,PropertyNet Computing Hub,2020,Hong Kong,40000,40,965000000,Residential,A&A,Build only
+42,SolarGrid Data Facility,2019,China,18000,25,385000000,Solar,Extension,Consultant
+43,ElectroForge Computing Center,2021,Taiwan,24000,33,655000000,Electronics,New,D&B
+44,ChemCore Processing Complex,2018,Singapore,44000,40,985000000,Chemical,A&A,Build only
+45,AutoVault Data Center,2022,Malaysia,26500,34,715000000,Automotive,Extension,Consultant
+46,GeoThermal Computing Hub,2017,Indonesia,16500,22,295000000,Energy,New,D&B
+47,ManufacturingNet Data Facility,2023,Philippines,21500,30,565000000,Manufacturing,A&A,Build only
+48,FoodNet Processing Center,2016,Thai,17800,24,345000000,Food,Extension,Consultant
+49,PharmaVault Data Hub,2024,Bangladesh,29500,36,795000000,Pharma,New,D&B
+50,BioCore Computing Complex,2015,India,32000,38,845000000,Biotech,A&A,Build only
+51,TradeNet Data Center,2020,Hong Kong,37000,39,915000000,Trade,Extension,Consultant
+52,WindForge Computing Facility,2019,China,12500,17,185000000,Wind,New,D&B
+53,PrecisionCore Data Hub,2021,Taiwan,23500,32,625000000,Engineering,A&A,Build only
+54,ChemFlow Processing Center,2018,Singapore,35500,38,885000000,Chemical,Extension,Consultant
+55,GasNet Data Facility,2022,Malaysia,19500,27,475000000,Gas,New,D&B
+56,HydroCore Computing Complex,2017,Indonesia,41000,40,975000000,Hydro,A&A,Build only
+57,RecycleNet Data Center,2023,Philippines,14500,20,225000000,Recycling,Extension,Consultant
+58,CementForge Computing Hub,2016,Thai,30000,37,805000000,Cement,New,D&B
+59,LeatherCraft Data Facility,2024,Bangladesh,16800,23,315000000,Leather,A&A,Build only
+60,SpaceNet Computing Complex,2015,India,39000,40,945000000,Aerospace,Extension,Consultant
+61,FinanceCore Data Center,2020,Hong Kong,34000,38,865000000,Financial,New,D&B
+62,ElectroVault Computing Hub,2019,China,27000,35,735000000,Automotive,A&A,Build only
+63,MedDevice Data Facility,2021,Taiwan,20500,28,545000000,Medical,Extension,Consultant
+64,RefineCore Processing Complex,2018,Singapore,46000,40,995000000,Refinery,New,D&B
+65,TimberNet Data Center,2022,Malaysia,18200,25,395000000,Timber,A&A,Build only
+66,CoalCore Computing Hub,2017,Indonesia,25000,33,675000000,Mining,Extension,Consultant
+67,SteelForge Data Complex,2023,Philippines,43000,40,990000000,Steel,New,D&B
+68,SugarNet Processing Center,2016,Thai,15800,21,265000000,Sugar,A&A,Build only
+69,JuteCore Data Facility,2024,Bangladesh,13500,19,215000000,Jute,Extension,Consultant
+70,AtomCore Computing Complex,2015,India,50000,40,1000000000,Nuclear,New,D&B
+71,CryptoVault Data Center,2020,Hong Kong,22800,31,605000000,Trading,A&A,Build only
+72,AICore Computing Hub,2019,China,31500,37,835000000,AI Center,Extension,Consultant
+73,MedTech Data Facility,2021,Taiwan,17200,24,335000000,Medical,New,D&B
+74,CargoNet Computing Complex,2018,Singapore,47000,40,998000000,Shipping,A&A,Build only
+75,GoldCore Data Center,2022,Malaysia,24800,33,665000000,Mining,Extension,Consultant
+76,AluminumForge Computing Hub,2017,Indonesia,38500,39,935000000,Smelting,New,D&B
+77,CopperCore Data Facility,2023,Philippines,21800,30,575000000,Mining,A&A,Build only
+78,RubberFlow Processing Center,2016,Thai,14000,19,235000000,Rubber,Extension,Consultant
+79,TeaNet Data Hub,2024,Bangladesh,10500,14,145000000,Tea,New,D&B
+80,AeroCore Computing Complex,2015,India,33500,38,855000000,Aerospace,A&A,Build only
+81,InsureNet Data Center,2020,Hong Kong,26800,34,725000000,Insurance,Extension,Consultant
+82,QuantumCore Computing Hub,2019,China,29800,36,785000000,Research,New,D&B
+83,OpticNet Data Facility,2021,Taiwan,16200,22,285000000,Optics,A&A,Build only
+84,LNGCore Processing Complex,2018,Singapore,45500,40,992000000,LNG,Extension,Consultant
+85,IronForge Data Center,2022,Malaysia,32500,38,847000000,Mining,New,D&B
+86,NickelCore Computing Hub,2017,Indonesia,23800,32,635000000,Processing,A&A,Build only
+87,BuildNet Data Facility,2023,Philippines,19000,26,425000000,Materials,Extension,Consultant
+88,SeaFood Processing Center,2016,Thai,11200,15,165000000,Seafood,New,D&B
+89,CottonCore Data Hub,2024,Bangladesh,20800,29,555000000,Textile,A&A,Build only
+90,SatelliteNet Computing Complex,2015,India,36500,39,905000000,Satellite,Extension,Consultant
+91,CoinVault Data Center,2020,Hong Kong,28800,36,765000000,Crypto,New,D&B
+92,FiveGCore Computing Hub,2019,China,41500,40,975000000,Telecom,A&A,Build only
+93,MaterialCore Data Facility,2021,Taiwan,24200,33,645000000,Research,Extension,Consultant
+94,WaterCore Processing Complex,2018,Singapore,35800,39,895000000,Water,New,D&B
+95,BauxiteForge Data Center,2022,Malaysia,30500,37,815000000,Mining,A&A,Build only
+96,PaperNet Computing Hub,2017,Indonesia,17500,24,355000000,Paper,Extension,Consultant
+97,FurnitureCore Data Facility,2023,Philippines,12800,17,195000000,Furniture,New,D&B
+98,CashewNet Processing Center,2016,Thai,9800,13,125000000,Processing,A&A,Build only
+99,ShipForge Computing Complex,2024,Bangladesh,42500,40,982000000,Shipyard,Extension,Consultant
+100,RailCore Data Center,2015,India,48500,40,999500000,Railway,New,D&B
