@@ -113,12 +113,105 @@
             border-radius: 8px;
             text-align: center;
         }
+        .theme-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-selector label {
+            font-weight: bold;
+            color: #333;
+        }
+        .theme-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 0.9em;
+        }
+        
+        /* Night Mode Styles */
+        body.night-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        body.night-mode .container {
+            color: #e0e0e0;
+        }
+        body.night-mode .csv-upload {
+            background-color: #2d2d2d;
+            border-color: #444;
+        }
+        body.night-mode input[type="text"], 
+        body.night-mode input[type="file"], 
+        body.night-mode select {
+            background-color: #3a3a3a;
+            border-color: #555;
+            color: #e0e0e0;
+        }
+        body.night-mode button {
+            background-color: #0056b3;
+            border-color: #004494;
+        }
+        body.night-mode button:hover {
+            background-color: #004494;
+        }
+        body.night-mode table {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+        body.night-mode th {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        body.night-mode tr:nth-child(even) {
+            background-color: #333;
+        }
+        body.night-mode tr:hover {
+            background-color: #404040;
+        }
+        body.night-mode td, body.night-mode th {
+            border-color: #555;
+        }
+        body.night-mode .table-container {
+            border-color: #555;
+        }
+        body.night-mode .column-index-list {
+            background-color: #2d2d2d;
+            border-color: #444;
+        }
+        body.night-mode .column-item {
+            background-color: #0056b3;
+        }
+        body.night-mode #scatterPlotContainer {
+            background-color: #2d2d2d;
+            border-color: #444;
+        }
+        body.night-mode .theme-selector label {
+            color: #e0e0e0;
+        }
+        body.night-mode .theme-selector select {
+            background-color: #3a3a3a;
+            border-color: #555;
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>CSV File Table Display</h1>
-        <p>Upload CSV files and view them as tables with data persistence!</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>CSV File Table Display</h1>
+                <p>Upload CSV files and view them as tables with data persistence!</p>
+            </div>
+            <div class="theme-selector">
+                <label for="themeToggle">Theme:</label>
+                <select id="themeToggle" onchange="toggleTheme()">
+                    <option value="day">Day Mode</option>
+                    <option value="night">Night Mode</option>
+                </select>
+            </div>
+        </div>
         
         <div class="csv-upload">
             <h2>CSV File Upload</h2>
@@ -462,8 +555,37 @@
             }
         }
 
-        // Load CSV data when page loads
+        // Theme toggle functionality
+        function toggleTheme() {
+            const themeSelect = document.getElementById('themeToggle');
+            const selectedTheme = themeSelect.value;
+            
+            if (selectedTheme === 'night') {
+                document.body.classList.add('night-mode');
+                localStorage.setItem('theme', 'night');
+            } else {
+                document.body.classList.remove('night-mode');
+                localStorage.setItem('theme', 'day');
+            }
+        }
+        
+        // Load saved theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeSelect = document.getElementById('themeToggle');
+            
+            if (savedTheme === 'night') {
+                document.body.classList.add('night-mode');
+                themeSelect.value = 'night';
+            } else {
+                document.body.classList.remove('night-mode');
+                themeSelect.value = 'day';
+            }
+        }
+
+        // Load CSV data and theme when page loads
         loadCSVData();
+        loadTheme();
     </script>
 </body>
 </html>
