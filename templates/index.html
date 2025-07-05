@@ -229,6 +229,19 @@
             
             <div id="scatterPlotControls" style="margin: 20px 0; display: none;">
                 <h3>Scatter Plot</h3>
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+                    <div>
+                        <label for="plotTypeSelect">Plot Type:</label>
+                        <select id="plotTypeSelect" onchange="toggleZAxisSelector()">
+                            <option value="2d">2D Scatter Plot</option>
+                            <option value="3d">3D Scatter Plot</option>
+                        </select>
+                    </div>
+                    <div id="olsToggleContainer" style="display: block;">
+                        <label for="olsToggle">OLS Trend Line:</label>
+                        <input type="checkbox" id="olsToggle" style="margin-left: 8px; transform: scale(1.2);">
+                    </div>
+                </div>
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
                     <div>
                         <label for="xAxisSelect">X-Axis:</label>
@@ -239,6 +252,12 @@
                     <div>
                         <label for="yAxisSelect">Y-Axis:</label>
                         <select id="yAxisSelect">
+                            <option value="">Select column</option>
+                        </select>
+                    </div>
+                    <div id="zAxisContainer" style="display: none;">
+                        <label for="zAxisSelect">Z-Axis:</label>
+                        <select id="zAxisSelect">
                             <option value="">Select column</option>
                         </select>
                     </div>
@@ -394,6 +413,7 @@
         function populateAxisSelectors(columns) {
             const xAxisSelect = document.getElementById('xAxisSelect');
             const yAxisSelect = document.getElementById('yAxisSelect');
+            const zAxisSelect = document.getElementById('zAxisSelect');
             const hoverColumnSelect = document.getElementById('hoverColumnSelect');
             const colorColumnSelect = document.getElementById('colorColumnSelect');
             const filterColumnSelect = document.getElementById('filterColumnSelect');
@@ -411,15 +431,17 @@
             // Clear existing options
             xAxisSelect.innerHTML = '<option value="">Select column</option>';
             yAxisSelect.innerHTML = '<option value="">Select column</option>';
+            zAxisSelect.innerHTML = '<option value="">Select column</option>';
             hoverColumnSelect.innerHTML = '<option value="">Select additional column (optional)</option>';
             colorColumnSelect.innerHTML = '<option value="">No color coding</option>';
             filterColumnSelect.innerHTML = '<option value="">No filter (show all data)</option>';
             filter2ColumnSelect.innerHTML = '<option value="">No second filter (show all data)</option>';
             
-            // Add only integer column options for X and Y axis (excluding id_number)
+            // Add only integer column options for X, Y, and Z axis (excluding id_number)
             integerColumns.forEach(col => {
                 xAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
                 yAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
+                zAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
             });
             
             // Add all column options for hover (including string columns)
@@ -495,6 +517,21 @@
             filter2ValueSelect.disabled = false;
         }
         
+        // Toggle Z-axis selector visibility based on plot type
+        function toggleZAxisSelector() {
+            const plotTypeSelect = document.getElementById('plotTypeSelect');
+            const zAxisContainer = document.getElementById('zAxisContainer');
+            const olsToggleContainer = document.getElementById('olsToggleContainer');
+            
+            if (plotTypeSelect.value === '3d') {
+                zAxisContainer.style.display = 'block';
+                olsToggleContainer.style.display = 'none'; // Hide OLS for 3D plots
+            } else {
+                zAxisContainer.style.display = 'none';
+                olsToggleContainer.style.display = 'block'; // Show OLS for 2D plots
+            }
+        }
+        
         // Check if a column contains numeric data
         function isNumericColumn(columnIndex) {
             if (!csvData || !csvData.data) return false;
@@ -510,17 +547,25 @@
         
         // Generate scatter plot using Plotly
         async function generateScatterPlot() {
+            const plotType = document.getElementById('plotTypeSelect').value;
             const xAxisIndex = document.getElementById('xAxisSelect').value;
             const yAxisIndex = document.getElementById('yAxisSelect').value;
+            const zAxisIndex = document.getElementById('zAxisSelect').value;
             const hoverColumnIndex = document.getElementById('hoverColumnSelect').value;
             const colorColumnIndex = document.getElementById('colorColumnSelect').value;
             const filterColumnIndex = document.getElementById('filterColumnSelect').value;
             const filterValue = document.getElementById('filterValueSelect').value;
             const filter2ColumnIndex = document.getElementById('filter2ColumnSelect').value;
             const filter2Value = document.getElementById('filter2ValueSelect').value;
+            const olsEnabled = document.getElementById('olsToggle').checked;
             
             if (!xAxisIndex || !yAxisIndex) {
                 alert('Please select both X and Y axis columns');
+                return;
+            }
+            
+            if (plotType === '3d' && !zAxisIndex) {
+                alert('Please select Z axis column for 3D plot');
                 return;
             }
             
@@ -529,24 +574,43 @@
                 return;
             }
             
+            if (plotType === '3d' && !isNumericColumn(zAxisIndex)) {
+                alert('Z-axis column must contain numeric data');
+                return;
+            }
+            
             try {
+                // Determine which endpoint to use based on plot type
+                const endpoint = plotType === '3d' ? '/generate-3d-scatter-plot' : '/generate-scatter-plot';
+                
+                // Prepare request data
+                const requestData = {
+                    x_column: xAxisIndex,
+                    y_column: yAxisIndex,
+                    hover_column: hoverColumnIndex || null,
+                    color_column: colorColumnIndex || null,
+                    filter_column: filterColumnIndex || null,
+                    filter_value: filterValue || null,
+                    filter2_column: filter2ColumnIndex || null,
+                    filter2_value: filter2Value || null,
+                    csv_data: csvData
+                };
+                
+                // Add Z-axis for 3D plots
+                if (plotType === '3d') {
+                    requestData.z_column = zAxisIndex;
+                } else {
+                    // Add OLS parameter for 2D plots
+                    requestData.ols_enabled = olsEnabled;
+                }
+                
                 // Send request to backend to generate Plotly chart
-                const response = await fetch('/generate-scatter-plot', {
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        x_column: xAxisIndex,
-                        y_column: yAxisIndex,
-                        hover_column: hoverColumnIndex || null,
-                        color_column: colorColumnIndex || null,
-                        filter_column: filterColumnIndex || null,
-                        filter_value: filterValue || null,
-                        filter2_column: filter2ColumnIndex || null,
-                        filter2_value: filter2Value || null,
-                        csv_data: csvData
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 if (!response.ok) {
