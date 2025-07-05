@@ -248,6 +248,12 @@
                             <option value="">Select additional column (optional)</option>
                         </select>
                     </div>
+                    <div>
+                        <label for="colorColumnSelect">Color by:</label>
+                        <select id="colorColumnSelect">
+                            <option value="">No color coding</option>
+                        </select>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
                     <div>
@@ -375,6 +381,7 @@
             const xAxisSelect = document.getElementById('xAxisSelect');
             const yAxisSelect = document.getElementById('yAxisSelect');
             const hoverColumnSelect = document.getElementById('hoverColumnSelect');
+            const colorColumnSelect = document.getElementById('colorColumnSelect');
             const filterColumnSelect = document.getElementById('filterColumnSelect');
             const scatterPlotControls = document.getElementById('scatterPlotControls');
             
@@ -390,6 +397,7 @@
             xAxisSelect.innerHTML = '<option value="">Select column</option>';
             yAxisSelect.innerHTML = '<option value="">Select column</option>';
             hoverColumnSelect.innerHTML = '<option value="">Select additional column (optional)</option>';
+            colorColumnSelect.innerHTML = '<option value="">No color coding</option>';
             filterColumnSelect.innerHTML = '<option value="">No filter (show all data)</option>';
             
             // Add only integer column options for X and Y axis (excluding id_number)
@@ -401,6 +409,13 @@
             // Add all column options for hover (including string columns)
             columns.forEach((column, index) => {
                 hoverColumnSelect.innerHTML += `<option value="${index}">${column}</option>`;
+            });
+            
+            // Add all columns for color coding (excluding id_number)
+            columns.forEach((column, index) => {
+                if (index !== 0) { // Exclude id_number
+                    colorColumnSelect.innerHTML += `<option value="${index}">${column}</option>`;
+                }
             });
             
             // Add all columns for filtering (excluding id_number)
@@ -456,6 +471,7 @@
             const xAxisIndex = document.getElementById('xAxisSelect').value;
             const yAxisIndex = document.getElementById('yAxisSelect').value;
             const hoverColumnIndex = document.getElementById('hoverColumnSelect').value;
+            const colorColumnIndex = document.getElementById('colorColumnSelect').value;
             const filterColumnIndex = document.getElementById('filterColumnSelect').value;
             const filterValue = document.getElementById('filterValueSelect').value;
             
@@ -480,6 +496,7 @@
                         x_column: xAxisIndex,
                         y_column: yAxisIndex,
                         hover_column: hoverColumnIndex || null,
+                        color_column: colorColumnIndex || null,
                         filter_column: filterColumnIndex || null,
                         filter_value: filterValue || null,
                         csv_data: csvData

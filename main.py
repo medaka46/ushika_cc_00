@@ -49,6 +49,7 @@ async def generate_scatter_plot(request: Request):
         x_column_idx = int(data.get('x_column'))
         y_column_idx = int(data.get('y_column'))
         hover_column_idx = data.get('hover_column')
+        color_column_idx = data.get('color_column')
         filter_column_idx = data.get('filter_column')
         filter_value = data.get('filter_value')
         csv_data = data.get('csv_data')
@@ -75,10 +76,17 @@ async def generate_scatter_plot(request: Request):
             hover_column_idx = int(hover_column_idx)
             hover_values = [row[hover_column_idx] for row in filtered_data]
         
+        # Extract color column data if specified
+        color_values = []
+        if color_column_idx is not None and color_column_idx != "":
+            color_column_idx = int(color_column_idx)
+            color_values = [row[color_column_idx] for row in filtered_data]
+        
         # Convert to numeric, filter out non-numeric values
         x_numeric = []
         y_numeric = []
         hover_text = []
+        color_text = []
         for i, (x, y) in enumerate(zip(x_values, y_values)):
             try:
                 x_num = float(x)
@@ -91,6 +99,12 @@ async def generate_scatter_plot(request: Request):
                     hover_text.append(str(hover_values[i]))
                 else:
                     hover_text.append("")
+                
+                # Add color text if color column is specified
+                if color_values and i < len(color_values):
+                    color_text.append(str(color_values[i]))
+                else:
+                    color_text.append("")
             except (ValueError, TypeError):
                 continue
         
@@ -112,25 +126,68 @@ async def generate_scatter_plot(request: Request):
         if filter_column_idx is not None and filter_column_idx != "" and filter_value is not None and filter_value != "":
             plot_title += f" (Filtered: {csv_data['columns'][int(filter_column_idx)]} = {filter_value})"
         
-        # Create Plotly scatter plot
-        scatter_data = go.Scatter(
-            x=x_numeric,
-            y=y_numeric,
-            mode='markers',
-            marker=dict(
-                size=8,
-                color='rgba(54, 162, 235, 0.7)',
-                line=dict(width=1, color='rgba(54, 162, 235, 1)')
-            ),
-            name=f"{csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}",
-            hovertemplate=hover_template
-        )
+        # Create Plotly scatter plot with color coding
+        if color_column_idx is not None and color_column_idx != "" and color_text:
+            # Get unique values for color mapping
+            unique_colors = list(set(color_text))
+            color_palette = [
+                '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+                '#c49c94', '#f7b6d3', '#c7c7c7', '#dbdb8d', '#9edae5'
+            ]
+            
+            # Create color mapping
+            color_map = {val: color_palette[i % len(color_palette)] for i, val in enumerate(unique_colors)}
+            colors = [color_map[val] for val in color_text]
+            
+            scatter_data = go.Scatter(
+                x=x_numeric,
+                y=y_numeric,
+                mode='markers',
+                marker=dict(
+                    size=8,
+                    color=colors,
+                    line=dict(width=1, color='rgba(0, 0, 0, 0.3)')
+                ),
+                name=f"{csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}",
+                hovertemplate=hover_template,
+                text=color_text,
+                customdata=color_text
+            )
+        else:
+            # Default single color
+            scatter_data = go.Scatter(
+                x=x_numeric,
+                y=y_numeric,
+                mode='markers',
+                marker=dict(
+                    size=8,
+                    color='rgba(54, 162, 235, 0.7)',
+                    line=dict(width=1, color='rgba(54, 162, 235, 1)')
+                ),
+                name=f"{csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}",
+                hovertemplate=hover_template
+            )
         
         # Add hover text if hover column is specified
         if hover_column_idx is not None and hover_column_idx != "" and hover_text:
             scatter_data.text = hover_text
         
         fig = go.Figure(data=scatter_data)
+        
+        # Add color legend if color coding is used
+        if color_column_idx is not None and color_column_idx != "" and color_text:
+            # Create dummy traces for legend
+            for i, unique_val in enumerate(unique_colors):
+                fig.add_trace(go.Scatter(
+                    x=[None], y=[None],
+                    mode='markers',
+                    marker=dict(size=10, color=color_palette[i % len(color_palette)]),
+                    name=str(unique_val),
+                    showlegend=True,
+                    legendgroup=str(unique_val)
+                ))
         
         fig.update_layout(
             title=dict(
