@@ -257,14 +257,28 @@
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
                     <div>
-                        <label for="filterColumnSelect">Filter by Column:</label>
+                        <label for="filterColumnSelect">First Filter by Column:</label>
                         <select id="filterColumnSelect" onchange="populateFilterValues()">
                             <option value="">No filter (show all data)</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filterValueSelect">Filter Value:</label>
+                        <label for="filterValueSelect">First Filter Value:</label>
                         <select id="filterValueSelect" disabled>
+                            <option value="">Select filter column first</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+                    <div>
+                        <label for="filter2ColumnSelect">Second Filter by Column:</label>
+                        <select id="filter2ColumnSelect" onchange="populateFilter2Values()">
+                            <option value="">No second filter (show all data)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter2ValueSelect">Second Filter Value:</label>
+                        <select id="filter2ValueSelect" disabled>
                             <option value="">Select filter column first</option>
                         </select>
                     </div>
@@ -383,6 +397,7 @@
             const hoverColumnSelect = document.getElementById('hoverColumnSelect');
             const colorColumnSelect = document.getElementById('colorColumnSelect');
             const filterColumnSelect = document.getElementById('filterColumnSelect');
+            const filter2ColumnSelect = document.getElementById('filter2ColumnSelect');
             const scatterPlotControls = document.getElementById('scatterPlotControls');
             
             // Define integer columns (excluding id_number which is index 0)
@@ -399,6 +414,7 @@
             hoverColumnSelect.innerHTML = '<option value="">Select additional column (optional)</option>';
             colorColumnSelect.innerHTML = '<option value="">No color coding</option>';
             filterColumnSelect.innerHTML = '<option value="">No filter (show all data)</option>';
+            filter2ColumnSelect.innerHTML = '<option value="">No second filter (show all data)</option>';
             
             // Add only integer column options for X and Y axis (excluding id_number)
             integerColumns.forEach(col => {
@@ -422,6 +438,7 @@
             columns.forEach((column, index) => {
                 if (index !== 0) { // Exclude id_number
                     filterColumnSelect.innerHTML += `<option value="${index}">${column}</option>`;
+                    filter2ColumnSelect.innerHTML += `<option value="${index}">${column}</option>`;
                 }
             });
             
@@ -453,6 +470,31 @@
             filterValueSelect.disabled = false;
         }
         
+        // Populate second filter values based on selected second filter column
+        function populateFilter2Values() {
+            const filter2ColumnSelect = document.getElementById('filter2ColumnSelect');
+            const filter2ValueSelect = document.getElementById('filter2ValueSelect');
+            const selectedColumnIndex = filter2ColumnSelect.value;
+            
+            if (!selectedColumnIndex || !csvData) {
+                filter2ValueSelect.innerHTML = '<option value="">Select filter column first</option>';
+                filter2ValueSelect.disabled = true;
+                return;
+            }
+            
+            // Get unique values from the selected column
+            const uniqueValues = [...new Set(csvData.data.map(row => row[selectedColumnIndex]))];
+            uniqueValues.sort(); // Sort values alphabetically/numerically
+            
+            // Populate second filter value dropdown
+            filter2ValueSelect.innerHTML = '<option value="">Show all values</option>';
+            uniqueValues.forEach(value => {
+                filter2ValueSelect.innerHTML += `<option value="${value}">${value}</option>`;
+            });
+            
+            filter2ValueSelect.disabled = false;
+        }
+        
         // Check if a column contains numeric data
         function isNumericColumn(columnIndex) {
             if (!csvData || !csvData.data) return false;
@@ -474,6 +516,8 @@
             const colorColumnIndex = document.getElementById('colorColumnSelect').value;
             const filterColumnIndex = document.getElementById('filterColumnSelect').value;
             const filterValue = document.getElementById('filterValueSelect').value;
+            const filter2ColumnIndex = document.getElementById('filter2ColumnSelect').value;
+            const filter2Value = document.getElementById('filter2ValueSelect').value;
             
             if (!xAxisIndex || !yAxisIndex) {
                 alert('Please select both X and Y axis columns');
@@ -499,6 +543,8 @@
                         color_column: colorColumnIndex || null,
                         filter_column: filterColumnIndex || null,
                         filter_value: filterValue || null,
+                        filter2_column: filter2ColumnIndex || null,
+                        filter2_value: filter2Value || null,
                         csv_data: csvData
                     })
                 });

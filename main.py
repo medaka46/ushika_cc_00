@@ -52,19 +52,37 @@ async def generate_scatter_plot(request: Request):
         color_column_idx = data.get('color_column')
         filter_column_idx = data.get('filter_column')
         filter_value = data.get('filter_value')
+        filter2_column_idx = data.get('filter2_column')
+        filter2_value = data.get('filter2_value')
         csv_data = data.get('csv_data')
         
         if not csv_data:
             raise HTTPException(status_code=400, detail="No CSV data provided")
         
-        # Apply filtering if specified
+        # Apply first filtering if specified
         filtered_data = csv_data['data']
+        filter_info = ""
+        
         if filter_column_idx is not None and filter_column_idx != "" and filter_value is not None and filter_value != "":
             filter_column_idx = int(filter_column_idx)
-            filtered_data = [row for row in csv_data['data'] if str(row[filter_column_idx]) == str(filter_value)]
+            filtered_data = [row for row in filtered_data if str(row[filter_column_idx]) == str(filter_value)]
+            filter_info += f"{csv_data['columns'][filter_column_idx]} = {filter_value}"
             
             if len(filtered_data) == 0:
-                raise HTTPException(status_code=400, detail=f"No data found for filter: {csv_data['columns'][filter_column_idx]} = {filter_value}")
+                raise HTTPException(status_code=400, detail=f"No data found for first filter: {csv_data['columns'][filter_column_idx]} = {filter_value}")
+        
+        # Apply second filtering if specified
+        if filter2_column_idx is not None and filter2_column_idx != "" and filter2_value is not None and filter2_value != "":
+            filter2_column_idx = int(filter2_column_idx)
+            filtered_data = [row for row in filtered_data if str(row[filter2_column_idx]) == str(filter2_value)]
+            
+            if filter_info:
+                filter_info += f" & {csv_data['columns'][filter2_column_idx]} = {filter2_value}"
+            else:
+                filter_info = f"{csv_data['columns'][filter2_column_idx]} = {filter2_value}"
+            
+            if len(filtered_data) == 0:
+                raise HTTPException(status_code=400, detail=f"No data found after applying both filters")
         
         # Extract data for plotting
         x_values = [row[x_column_idx] for row in filtered_data if row[x_column_idx] is not None]
@@ -123,8 +141,8 @@ async def generate_scatter_plot(request: Request):
         
         # Update title to include filter information
         plot_title = f"Interactive Scatter Plot: {csv_data['columns'][y_column_idx]} vs {csv_data['columns'][x_column_idx]}"
-        if filter_column_idx is not None and filter_column_idx != "" and filter_value is not None and filter_value != "":
-            plot_title += f" (Filtered: {csv_data['columns'][int(filter_column_idx)]} = {filter_value})"
+        if filter_info:
+            plot_title += f" (Filtered: {filter_info})"
         
         # Create Plotly scatter plot with color coding
         if color_column_idx is not None and color_column_idx != "" and color_text:
