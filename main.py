@@ -447,6 +447,47 @@ async def generate_3d_scatter_plot(request: Request):
         
         fig = go.Figure(data=scatter_data)
         
+        # Add OLS regression plane if enabled for 3D plots
+        if ols_enabled and len(x_numeric) >= 3:
+            try:
+                # Prepare data for multiple linear regression (Z = a*X + b*Y + c)
+                X = np.column_stack([x_numeric, y_numeric])
+                z = np.array(z_numeric)
+                
+                # Fit multiple linear regression model
+                model = LinearRegression()
+                model.fit(X, z)
+                
+                # Calculate R-squared
+                r_squared = model.score(X, z)
+                
+                # Create a mesh for the regression plane
+                x_range = np.linspace(min(x_numeric), max(x_numeric), 20)
+                y_range = np.linspace(min(y_numeric), max(y_numeric), 20)
+                xx, yy = np.meshgrid(x_range, y_range)
+                
+                # Predict Z values for the mesh
+                mesh_points = np.column_stack([xx.ravel(), yy.ravel()])
+                zz_pred = model.predict(mesh_points).reshape(xx.shape)
+                
+                # Add regression plane as a surface
+                fig.add_trace(go.Surface(
+                    x=xx,
+                    y=yy,
+                    z=zz_pred,
+                    opacity=0.3,
+                    colorscale='Reds',
+                    name=f'OLS Regression Plane (R² = {r_squared:.3f})',
+                    showscale=False,
+                    hovertemplate=f'<b>OLS Regression Plane</b><br>' +
+                                f'R² = {r_squared:.3f}<br>' +
+                                f'Equation: Z = {model.coef_[0]:.3f}*X + {model.coef_[1]:.3f}*Y + {model.intercept_:.3f}<br>' +
+                                '<extra></extra>'
+                ))
+            except Exception as e:
+                # If OLS calculation fails, continue without regression plane
+                print(f"Warning: Could not calculate 3D OLS regression plane: {str(e)}")
+        
         # Add color legend if color coding is used
         if color_column_idx is not None and color_column_idx != "" and color_text:
             # Create dummy traces for legend
