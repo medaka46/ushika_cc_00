@@ -525,7 +525,7 @@
             
             if (plotTypeSelect.value === '3d') {
                 zAxisContainer.style.display = 'block';
-                olsToggleContainer.style.display = 'none'; // Hide OLS for 3D plots
+                olsToggleContainer.style.display = 'block'; // Show OLS for 3D plots (regression plane)
             } else {
                 zAxisContainer.style.display = 'none';
                 olsToggleContainer.style.display = 'block'; // Show OLS for 2D plots
@@ -599,10 +599,10 @@
                 // Add Z-axis for 3D plots
                 if (plotType === '3d') {
                     requestData.z_column = zAxisIndex;
-                } else {
-                    // Add OLS parameter for 2D plots
-                    requestData.ols_enabled = olsEnabled;
                 }
+                
+                // Add OLS parameter for both 2D and 3D plots
+                requestData.ols_enabled = olsEnabled;
                 
                 // Send request to backend to generate Plotly chart
                 const response = await fetch(endpoint, {

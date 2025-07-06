@@ -299,6 +299,7 @@ async def generate_3d_scatter_plot(request: Request):
         filter_value = data.get('filter_value')
         filter2_column_idx = data.get('filter2_column')
         filter2_value = data.get('filter2_value')
+        ols_enabled = data.get('ols_enabled', False)
         csv_data = data.get('csv_data')
         
         if not csv_data:
