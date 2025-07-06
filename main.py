@@ -9,8 +9,13 @@ import plotly.graph_objects as go
 import plotly.utils
 import numpy as np
 from sklearn.linear_model import LinearRegression
+import os
 
 app = FastAPI()
+
+# Create static directory if it doesn't exist
+if not os.path.exists("static"):
+    os.makedirs("static")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
