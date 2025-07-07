@@ -242,15 +242,28 @@ async def generate_scatter_plot(request: Request):
         fig = go.Figure(data=scatter_data)
         
         # Add OLS trend line if enabled
+        print(f"DEBUG: OLS enabled: {ols_enabled}, x_numeric length: {len(x_numeric)}")
         if ols_enabled and len(x_numeric) >= 2:
             try:
+                print(f"DEBUG: Starting OLS calculation with {len(x_numeric)} data points")
+                
                 # Prepare data for linear regression
                 X = np.array(x_numeric).reshape(-1, 1)
                 y = np.array(y_numeric)
                 
+                print(f"DEBUG: X shape: {X.shape}, y shape: {y.shape}")
+                print(f"DEBUG: X range: {np.min(X)} to {np.max(X)}")
+                print(f"DEBUG: y range: {np.min(y)} to {np.max(y)}")
+                
+                # Check for invalid values
+                if np.any(np.isnan(X)) or np.any(np.isnan(y)) or np.any(np.isinf(X)) or np.any(np.isinf(y)):
+                    raise ValueError("Data contains NaN or infinite values")
+                
                 # Fit linear regression model
                 model = LinearRegression()
                 model.fit(X, y)
+                
+                print(f"DEBUG: Model fitted. Coef: {model.coef_[0]}, Intercept: {model.intercept_}")
                 
                 # Generate trend line points
                 x_trend = np.linspace(min(x_numeric), max(x_numeric), 100)
@@ -259,10 +272,16 @@ async def generate_scatter_plot(request: Request):
                 # Calculate R-squared
                 r_squared = model.score(X, y)
                 
+                print(f"DEBUG: R-squared: {r_squared}")
+                
+                # Check for invalid trend line values
+                if np.any(np.isnan(y_trend)) or np.any(np.isinf(y_trend)):
+                    raise ValueError("Trend line contains invalid values")
+                
                 # Add trend line to plot
                 fig.add_trace(go.Scatter(
-                    x=x_trend,
-                    y=y_trend,
+                    x=x_trend.tolist(),
+                    y=y_trend.tolist(),
                     mode='lines',
                     name=f'OLS Trend Line (R² = {r_squared:.3f})',
                     line=dict(
@@ -276,9 +295,13 @@ async def generate_scatter_plot(request: Request):
                                 f'Intercept = {model.intercept_:.3f}<br>' +
                                 '<extra></extra>'
                 ))
+                print("DEBUG: OLS trend line added successfully")
             except Exception as e:
                 # If OLS calculation fails, continue without trend line
-                print(f"Warning: Could not calculate OLS trend line: {str(e)}")
+                print(f"ERROR: Could not calculate OLS trend line: {str(e)}")
+                print(f"ERROR: Exception type: {type(e).__name__}")
+                import traceback
+                print(f"ERROR: Full traceback: {traceback.format_exc()}")
         
         # Add color legend if color coding is used
         if color_column_idx is not None and color_column_idx != "" and color_text:
@@ -487,18 +510,33 @@ async def generate_3d_scatter_plot(request: Request):
         fig = go.Figure(data=scatter_data)
         
         # Add OLS regression plane if enabled for 3D plots
+        print(f"DEBUG 3D: OLS enabled: {ols_enabled}, x_numeric length: {len(x_numeric)}")
         if ols_enabled and len(x_numeric) >= 3:
             try:
+                print(f"DEBUG 3D: Starting 3D OLS calculation with {len(x_numeric)} data points")
+                
                 # Prepare data for multiple linear regression (Z = a*X + b*Y + c)
                 X = np.column_stack([x_numeric, y_numeric])
                 z = np.array(z_numeric)
+                
+                print(f"DEBUG 3D: X shape: {X.shape}, z shape: {z.shape}")
+                print(f"DEBUG 3D: X range: [{np.min(X[:,0])}, {np.max(X[:,0])}], [{np.min(X[:,1])}, {np.max(X[:,1])}]")
+                print(f"DEBUG 3D: z range: {np.min(z)} to {np.max(z)}")
+                
+                # Check for invalid values
+                if np.any(np.isnan(X)) or np.any(np.isnan(z)) or np.any(np.isinf(X)) or np.any(np.isinf(z)):
+                    raise ValueError("3D Data contains NaN or infinite values")
                 
                 # Fit multiple linear regression model
                 model = LinearRegression()
                 model.fit(X, z)
                 
+                print(f"DEBUG 3D: Model fitted. Coef: {model.coef_}, Intercept: {model.intercept_}")
+                
                 # Calculate R-squared
                 r_squared = model.score(X, z)
+                
+                print(f"DEBUG 3D: R-squared: {r_squared}")
                 
                 # Create a mesh for the regression plane
                 x_range = np.linspace(min(x_numeric), max(x_numeric), 20)
@@ -509,11 +547,15 @@ async def generate_3d_scatter_plot(request: Request):
                 mesh_points = np.column_stack([xx.ravel(), yy.ravel()])
                 zz_pred = model.predict(mesh_points).reshape(xx.shape)
                 
+                # Check for invalid surface values
+                if np.any(np.isnan(zz_pred)) or np.any(np.isinf(zz_pred)):
+                    raise ValueError("3D Regression surface contains invalid values")
+                
                 # Add regression plane as a surface
                 fig.add_trace(go.Surface(
-                    x=xx,
-                    y=yy,
-                    z=zz_pred,
+                    x=xx.tolist(),
+                    y=yy.tolist(),
+                    z=zz_pred.tolist(),
                     opacity=0.3,
                     colorscale='Reds',
                     name=f'OLS Regression Plane (R² = {r_squared:.3f})',
@@ -523,9 +565,13 @@ async def generate_3d_scatter_plot(request: Request):
                                 f'Equation: Z = {model.coef_[0]:.3f}*X + {model.coef_[1]:.3f}*Y + {model.intercept_:.3f}<br>' +
                                 '<extra></extra>'
                 ))
+                print("DEBUG 3D: OLS regression plane added successfully")
             except Exception as e:
                 # If OLS calculation fails, continue without regression plane
-                print(f"Warning: Could not calculate 3D OLS regression plane: {str(e)}")
+                print(f"ERROR 3D: Could not calculate 3D OLS regression plane: {str(e)}")
+                print(f"ERROR 3D: Exception type: {type(e).__name__}")
+                import traceback
+                print(f"ERROR 3D: Full traceback: {traceback.format_exc()}")
         
         # Add color legend if color coding is used
         if color_column_idx is not None and color_column_idx != "" and color_text:
