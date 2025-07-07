@@ -420,13 +420,28 @@
             const filter2ColumnSelect = document.getElementById('filter2ColumnSelect');
             const scatterPlotControls = document.getElementById('scatterPlotControls');
             
-            // Define integer columns (excluding id_number which is index 0)
-            const integerColumns = [
-                { index: 2, name: columns[2] }, // Year
-                { index: 4, name: columns[4] }, // TFA
-                { index: 5, name: columns[5] }, // Power
-                { index: 6, name: columns[6] }  // Price(USD)
-            ];
+            // Dynamically detect numeric columns from the actual CSV data
+            const numericColumns = [];
+            columns.forEach((column, index) => {
+                if (index === 0) return; // Skip first column (usually ID)
+                
+                // Check if this column contains numeric data
+                let hasNumericData = false;
+                for (let row of csvData.data) {
+                    const value = row[index];
+                    if (value !== null && value !== undefined && value !== '') {
+                        if (typeof value === 'number' || (!isNaN(Number(value)) && Number(value) !== 0)) {
+                            hasNumericData = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // If column has numeric data, add it to the list
+                if (hasNumericData) {
+                    numericColumns.push({ index: index, name: column });
+                }
+            });
             
             // Clear existing options
             xAxisSelect.innerHTML = '<option value="">Select column</option>';
@@ -437,8 +452,8 @@
             filterColumnSelect.innerHTML = '<option value="">No filter (show all data)</option>';
             filter2ColumnSelect.innerHTML = '<option value="">No second filter (show all data)</option>';
             
-            // Add only integer column options for X, Y, and Z axis (excluding id_number)
-            integerColumns.forEach(col => {
+            // Add all detected numeric columns for X, Y, and Z axis selection
+            numericColumns.forEach(col => {
                 xAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
                 yAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
                 zAxisSelect.innerHTML += `<option value="${col.index}">${col.name}</option>`;
