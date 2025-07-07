@@ -38,9 +38,48 @@ async def upload_csv(file: UploadFile = File(...)):
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         
+        # Clean the data to handle large numbers with commas and missing values
+        def clean_cell_value(value):
+            """Clean individual cell values for JSON compatibility"""
+            if pd.isna(value) or value == '' or str(value).strip() == '':
+                return None
+            
+            # Convert to string first
+            str_value = str(value).strip()
+            
+            # Try to clean numeric values with commas
+            if ',' in str_value and str_value.replace(',', '').replace('.', '').replace('-', '').isdigit():
+                try:
+                    # Remove commas and convert to float, then to int if it's a whole number
+                    clean_num = float(str_value.replace(',', ''))
+                    if clean_num.is_integer():
+                        return int(clean_num)
+                    return clean_num
+                except (ValueError, OverflowError):
+                    return str_value
+            
+            # Try to convert to numeric if possible
+            try:
+                num_value = float(str_value)
+                # Check if it's JSON-safe (not inf or nan)
+                if not (np.isinf(num_value) or np.isnan(num_value)):
+                    if num_value.is_integer():
+                        return int(num_value)
+                    return num_value
+                else:
+                    return str_value
+            except (ValueError, OverflowError):
+                return str_value
+        
+        # Apply cleaning to all data
+        cleaned_data = []
+        for row in df.values:
+            cleaned_row = [clean_cell_value(cell) for cell in row]
+            cleaned_data.append(cleaned_row)
+        
         table_data = {
             "columns": df.columns.tolist(),
-            "data": df.values.tolist(),
+            "data": cleaned_data,
             "filename": file.filename
         }
         
