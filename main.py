@@ -509,66 +509,117 @@ async def generate_3d_scatter_plot(request: Request):
         
         fig = go.Figure(data=scatter_data)
         
-        # Add OLS regression plane if enabled for 3D plots
+        # Add OLS trend line for 3D plots (using parametric curve fitting)
         print(f"DEBUG 3D: OLS enabled: {ols_enabled}, x_numeric length: {len(x_numeric)}")
         if ols_enabled and len(x_numeric) >= 3:
             try:
-                print(f"DEBUG 3D: Starting 3D OLS calculation with {len(x_numeric)} data points")
+                print(f"DEBUG 3D: Starting 3D OLS trend line calculation with {len(x_numeric)} data points")
                 
-                # Prepare data for multiple linear regression (Z = a*X + b*Y + c)
-                X = np.column_stack([x_numeric, y_numeric])
-                z = np.array(z_numeric)
+                # Convert to numpy arrays
+                x_array = np.array(x_numeric)
+                y_array = np.array(y_numeric)
+                z_array = np.array(z_numeric)
                 
-                print(f"DEBUG 3D: X shape: {X.shape}, z shape: {z.shape}")
-                print(f"DEBUG 3D: X range: [{np.min(X[:,0])}, {np.max(X[:,0])}], [{np.min(X[:,1])}, {np.max(X[:,1])}]")
-                print(f"DEBUG 3D: z range: {np.min(z)} to {np.max(z)}")
+                print(f"DEBUG 3D: Data ranges - X: [{np.min(x_array)}, {np.max(x_array)}], Y: [{np.min(y_array)}, {np.max(y_array)}], Z: [{np.min(z_array)}, {np.max(z_array)}]")
                 
                 # Check for invalid values
-                if np.any(np.isnan(X)) or np.any(np.isnan(z)) or np.any(np.isinf(X)) or np.any(np.isinf(z)):
+                if np.any(np.isnan(x_array)) or np.any(np.isnan(y_array)) or np.any(np.isnan(z_array)) or \
+                   np.any(np.isinf(x_array)) or np.any(np.isinf(y_array)) or np.any(np.isinf(z_array)):
                     raise ValueError("3D Data contains NaN or infinite values")
                 
-                # Fit multiple linear regression model
-                model = LinearRegression()
-                model.fit(X, z)
+                # Sort points by their distance from the centroid to create a smooth line
+                centroid_x, centroid_y, centroid_z = np.mean(x_array), np.mean(y_array), np.mean(z_array)
                 
-                print(f"DEBUG 3D: Model fitted. Coef: {model.coef_}, Intercept: {model.intercept_}")
+                # Calculate distances from centroid and sort
+                distances = np.sqrt((x_array - centroid_x)**2 + (y_array - centroid_y)**2 + (z_array - centroid_z)**2)
+                sorted_indices = np.argsort(distances)
                 
-                # Calculate R-squared
-                r_squared = model.score(X, z)
+                # Create sorted arrays
+                x_sorted = x_array[sorted_indices]
+                y_sorted = y_array[sorted_indices]
+                z_sorted = z_array[sorted_indices]
                 
-                print(f"DEBUG 3D: R-squared: {r_squared}")
+                # Create parametric variable (0 to 1)
+                t = np.linspace(0, 1, len(x_sorted))
                 
-                # Create a mesh for the regression plane
-                x_range = np.linspace(min(x_numeric), max(x_numeric), 20)
-                y_range = np.linspace(min(y_numeric), max(y_numeric), 20)
-                xx, yy = np.meshgrid(x_range, y_range)
-                
-                # Predict Z values for the mesh
-                mesh_points = np.column_stack([xx.ravel(), yy.ravel()])
-                zz_pred = model.predict(mesh_points).reshape(xx.shape)
-                
-                # Check for invalid surface values
-                if np.any(np.isnan(zz_pred)) or np.any(np.isinf(zz_pred)):
-                    raise ValueError("3D Regression surface contains invalid values")
-                
-                # Add regression plane as a surface
-                fig.add_trace(go.Surface(
-                    x=xx.tolist(),
-                    y=yy.tolist(),
-                    z=zz_pred.tolist(),
-                    opacity=0.3,
-                    colorscale='Reds',
-                    name=f'OLS Regression Plane (R² = {r_squared:.3f})',
-                    showscale=False,
-                    hovertemplate=f'<b>OLS Regression Plane</b><br>' +
-                                f'R² = {r_squared:.3f}<br>' +
-                                f'Equation: Z = {model.coef_[0]:.3f}*X + {model.coef_[1]:.3f}*Y + {model.intercept_:.3f}<br>' +
-                                '<extra></extra>'
-                ))
-                print("DEBUG 3D: OLS regression plane added successfully")
+                # Fit polynomial curves for each coordinate as function of parameter t
+                try:
+                    # Use degree 2 polynomial for smooth curves, but fall back to degree 1 if needed
+                    degree = min(2, len(x_sorted) - 1)
+                    
+                    x_coeffs = np.polyfit(t, x_sorted, degree)
+                    y_coeffs = np.polyfit(t, y_sorted, degree)
+                    z_coeffs = np.polyfit(t, z_sorted, degree)
+                    
+                    # Generate smooth trend line with more points
+                    t_smooth = np.linspace(0, 1, 50)
+                    x_trend = np.polyval(x_coeffs, t_smooth)
+                    y_trend = np.polyval(y_coeffs, t_smooth)
+                    z_trend = np.polyval(z_coeffs, t_smooth)
+                    
+                    # Calculate R-squared for the trend (using Z as dependent variable)
+                    # For 3D, we'll calculate a composite R-squared
+                    z_predicted = np.polyval(z_coeffs, t)
+                    ss_res = np.sum((z_sorted - z_predicted) ** 2)
+                    ss_tot = np.sum((z_sorted - np.mean(z_sorted)) ** 2)
+                    r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+                    
+                    print(f"DEBUG 3D: Trend line fitted. R² = {r_squared:.3f}")
+                    
+                    # Check for invalid trend line values
+                    if np.any(np.isnan(x_trend)) or np.any(np.isnan(y_trend)) or np.any(np.isnan(z_trend)) or \
+                       np.any(np.isinf(x_trend)) or np.any(np.isinf(y_trend)) or np.any(np.isinf(z_trend)):
+                        raise ValueError("3D Trend line contains invalid values")
+                    
+                    # Add 3D trend line to plot
+                    fig.add_trace(go.Scatter3d(
+                        x=x_trend.tolist(),
+                        y=y_trend.tolist(),
+                        z=z_trend.tolist(),
+                        mode='lines',
+                        name=f'3D Trend Line (R² = {r_squared:.3f})',
+                        line=dict(
+                            color='red',
+                            width=6
+                        ),
+                        hovertemplate=f'<b>3D Trend Line</b><br>' +
+                                    f'R² = {r_squared:.3f}<br>' +
+                                    f'X: %{{x:.2f}}<br>' +
+                                    f'Y: %{{y:.2f}}<br>' +
+                                    f'Z: %{{z:.2f}}<br>' +
+                                    '<extra></extra>'
+                    ))
+                    print("DEBUG 3D: 3D trend line added successfully")
+                    
+                except np.linalg.LinAlgError:
+                    # Fall back to simple linear interpolation if polynomial fitting fails
+                    print("DEBUG 3D: Polynomial fitting failed, using linear interpolation")
+                    
+                    # Simple linear trend through the data
+                    n_points = min(20, len(x_sorted))
+                    indices = np.linspace(0, len(x_sorted)-1, n_points).astype(int)
+                    
+                    fig.add_trace(go.Scatter3d(
+                        x=x_sorted[indices].tolist(),
+                        y=y_sorted[indices].tolist(), 
+                        z=z_sorted[indices].tolist(),
+                        mode='lines',
+                        name='3D Trend Line (Linear)',
+                        line=dict(
+                            color='red',
+                            width=6
+                        ),
+                        hovertemplate='<b>3D Trend Line</b><br>' +
+                                    f'X: %{{x:.2f}}<br>' +
+                                    f'Y: %{{y:.2f}}<br>' +
+                                    f'Z: %{{z:.2f}}<br>' +
+                                    '<extra></extra>'
+                    ))
+                    print("DEBUG 3D: Linear 3D trend line added successfully")
+                    
             except Exception as e:
-                # If OLS calculation fails, continue without regression plane
-                print(f"ERROR 3D: Could not calculate 3D OLS regression plane: {str(e)}")
+                # If OLS calculation fails, continue without trend line
+                print(f"ERROR 3D: Could not calculate 3D trend line: {str(e)}")
                 print(f"ERROR 3D: Exception type: {type(e).__name__}")
                 import traceback
                 print(f"ERROR 3D: Full traceback: {traceback.format_exc()}")
