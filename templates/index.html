@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV File Table Display</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="/static/plotly-latest.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -728,6 +728,37 @@
         // Load CSV data and theme when page loads
         loadCSVData();
         loadTheme();
+        
+        // Security: Clear sensitive data when page is closed
+        window.addEventListener('beforeunload', function() {
+            try {
+                localStorage.removeItem('csvTableData');
+                if (csvData) {
+                    csvData = null;
+                }
+            } catch (e) {
+                // Silent cleanup
+            }
+        });
+        
+        // Security: Clear data after 30 minutes of inactivity
+        let inactivityTimer;
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(function() {
+                localStorage.removeItem('csvTableData');
+                if (csvData) {
+                    csvData = null;
+                }
+                location.reload(); // Refresh to clear memory
+            }, 30 * 60 * 1000); // 30 minutes
+        }
+        
+        // Reset timer on user activity
+        document.addEventListener('mousemove', resetInactivityTimer);
+        document.addEventListener('keypress', resetInactivityTimer);
+        document.addEventListener('click', resetInactivityTimer);
+        resetInactivityTimer();
     </script>
 </body>
 </html>

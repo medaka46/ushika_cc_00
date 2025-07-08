@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import json
 import pandas as pd
 import io
@@ -10,8 +11,33 @@ import plotly.utils
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import os
+import secrets
+import hashlib
 
 app = FastAPI()
+
+# Security: HTTP Basic Authentication
+security = HTTPBasic()
+
+# Security: Simple authentication (use environment variables in production)
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD_HASH = hashlib.sha256(os.environ.get("ADMIN_PASSWORD", "ushika2024").encode()).hexdigest()
+
+def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
+    """Simple authentication check"""
+    username_correct = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    password_correct = secrets.compare_digest(
+        hashlib.sha256(credentials.password.encode()).hexdigest(), 
+        ADMIN_PASSWORD_HASH
+    )
+    
+    if not (username_correct and password_correct):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 # Create static directory if it doesn't exist
 if not os.path.exists("static"):
@@ -21,22 +47,35 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request, user: str = Depends(authenticate)):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/save-data")
-async def save_data(request: Request):
+async def save_data(request: Request, user: str = Depends(authenticate)):
     data = await request.json()
     return {"status": "success", "data": data}
 
 @app.post("/upload-csv")
-async def upload_csv(file: UploadFile = File(...)):
+async def upload_csv(file: UploadFile = File(...), user: str = Depends(authenticate)):
     try:
         if not file.filename.endswith('.csv'):
             raise HTTPException(status_code=400, detail="Only CSV files are allowed")
         
         contents = await file.read()
+        
+        # Security: Limit file size to prevent abuse
+        if len(contents) > 10 * 1024 * 1024:  # 10MB limit
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
+        
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        
+        # Security: Limit number of rows to prevent memory exhaustion
+        if len(df) > 10000:
+            raise HTTPException(status_code=413, detail="Too many rows. Maximum is 10,000 rows.")
+        
+        # Security: Limit number of columns
+        if len(df.columns) > 50:
+            raise HTTPException(status_code=413, detail="Too many columns. Maximum is 50 columns.")
         
         # Clean the data to handle large numbers with commas and missing values
         def clean_cell_value(value):
@@ -89,7 +128,7 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error processing CSV file: {str(e)}")
 
 @app.post("/generate-scatter-plot")
-async def generate_scatter_plot(request: Request):
+async def generate_scatter_plot(request: Request, user: str = Depends(authenticate)):
     try:
         data = await request.json()
         x_column_idx = int(data.get('x_column'))
@@ -242,18 +281,11 @@ async def generate_scatter_plot(request: Request):
         fig = go.Figure(data=scatter_data)
         
         # Add OLS trend line if enabled
-        print(f"DEBUG: OLS enabled: {ols_enabled}, x_numeric length: {len(x_numeric)}")
         if ols_enabled and len(x_numeric) >= 2:
             try:
-                print(f"DEBUG: Starting OLS calculation with {len(x_numeric)} data points")
-                
                 # Prepare data for linear regression
                 X = np.array(x_numeric).reshape(-1, 1)
                 y = np.array(y_numeric)
-                
-                print(f"DEBUG: X shape: {X.shape}, y shape: {y.shape}")
-                print(f"DEBUG: X range: {np.min(X)} to {np.max(X)}")
-                print(f"DEBUG: y range: {np.min(y)} to {np.max(y)}")
                 
                 # Check for invalid values
                 if np.any(np.isnan(X)) or np.any(np.isnan(y)) or np.any(np.isinf(X)) or np.any(np.isinf(y)):
@@ -263,16 +295,12 @@ async def generate_scatter_plot(request: Request):
                 model = LinearRegression()
                 model.fit(X, y)
                 
-                print(f"DEBUG: Model fitted. Coef: {model.coef_[0]}, Intercept: {model.intercept_}")
-                
                 # Generate trend line points
                 x_trend = np.linspace(min(x_numeric), max(x_numeric), 100)
                 y_trend = model.predict(x_trend.reshape(-1, 1))
                 
                 # Calculate R-squared
                 r_squared = model.score(X, y)
-                
-                print(f"DEBUG: R-squared: {r_squared}")
                 
                 # Check for invalid trend line values
                 if np.any(np.isnan(y_trend)) or np.any(np.isinf(y_trend)):
@@ -295,13 +323,9 @@ async def generate_scatter_plot(request: Request):
                                 f'Intercept = {model.intercept_:.3f}<br>' +
                                 '<extra></extra>'
                 ))
-                print("DEBUG: OLS trend line added successfully")
             except Exception as e:
                 # If OLS calculation fails, continue without trend line
-                print(f"ERROR: Could not calculate OLS trend line: {str(e)}")
-                print(f"ERROR: Exception type: {type(e).__name__}")
-                import traceback
-                print(f"ERROR: Full traceback: {traceback.format_exc()}")
+                pass
         
         # Add color legend if color coding is used
         if color_column_idx is not None and color_column_idx != "" and color_text:
@@ -349,7 +373,7 @@ async def generate_scatter_plot(request: Request):
         raise HTTPException(status_code=400, detail=f"Error generating scatter plot: {str(e)}")
 
 @app.post("/generate-3d-scatter-plot")
-async def generate_3d_scatter_plot(request: Request):
+async def generate_3d_scatter_plot(request: Request, user: str = Depends(authenticate)):
     try:
         data = await request.json()
         x_column_idx = int(data.get('x_column'))
@@ -510,17 +534,12 @@ async def generate_3d_scatter_plot(request: Request):
         fig = go.Figure(data=scatter_data)
         
         # Add OLS trend line for 3D plots (using parametric curve fitting)
-        print(f"DEBUG 3D: OLS enabled: {ols_enabled}, x_numeric length: {len(x_numeric)}")
         if ols_enabled and len(x_numeric) >= 3:
             try:
-                print(f"DEBUG 3D: Starting 3D OLS trend line calculation with {len(x_numeric)} data points")
-                
                 # Convert to numpy arrays
                 x_array = np.array(x_numeric)
                 y_array = np.array(y_numeric)
                 z_array = np.array(z_numeric)
-                
-                print(f"DEBUG 3D: Data ranges - X: [{np.min(x_array)}, {np.max(x_array)}], Y: [{np.min(y_array)}, {np.max(y_array)}], Z: [{np.min(z_array)}, {np.max(z_array)}]")
                 
                 # Check for invalid values
                 if np.any(np.isnan(x_array)) or np.any(np.isnan(y_array)) or np.any(np.isnan(z_array)) or \
@@ -564,8 +583,6 @@ async def generate_3d_scatter_plot(request: Request):
                     ss_tot = np.sum((z_sorted - np.mean(z_sorted)) ** 2)
                     r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
                     
-                    print(f"DEBUG 3D: Trend line fitted. R² = {r_squared:.3f}")
-                    
                     # Check for invalid trend line values
                     if np.any(np.isnan(x_trend)) or np.any(np.isnan(y_trend)) or np.any(np.isnan(z_trend)) or \
                        np.any(np.isinf(x_trend)) or np.any(np.isinf(y_trend)) or np.any(np.isinf(z_trend)):
@@ -589,12 +606,9 @@ async def generate_3d_scatter_plot(request: Request):
                                     f'Z: %{{z:.2f}}<br>' +
                                     '<extra></extra>'
                     ))
-                    print("DEBUG 3D: 3D trend line added successfully")
                     
                 except np.linalg.LinAlgError:
                     # Fall back to simple linear interpolation if polynomial fitting fails
-                    print("DEBUG 3D: Polynomial fitting failed, using linear interpolation")
-                    
                     # Simple linear trend through the data
                     n_points = min(20, len(x_sorted))
                     indices = np.linspace(0, len(x_sorted)-1, n_points).astype(int)
@@ -615,14 +629,10 @@ async def generate_3d_scatter_plot(request: Request):
                                     f'Z: %{{z:.2f}}<br>' +
                                     '<extra></extra>'
                     ))
-                    print("DEBUG 3D: Linear 3D trend line added successfully")
                     
             except Exception as e:
                 # If OLS calculation fails, continue without trend line
-                print(f"ERROR 3D: Could not calculate 3D trend line: {str(e)}")
-                print(f"ERROR 3D: Exception type: {type(e).__name__}")
-                import traceback
-                print(f"ERROR 3D: Full traceback: {traceback.format_exc()}")
+                pass
         
         # Add color legend if color coding is used
         if color_column_idx is not None and color_column_idx != "" and color_text:

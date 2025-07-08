@@ -1,2 +1,6 @@
 20250704 07:00
     try to reduce data indication only selected item.
+
+20250707 07:00
+    successed to deploy by Render but could not draw OLS trend line.
+    
